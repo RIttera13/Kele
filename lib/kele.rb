@@ -7,26 +7,34 @@ class Kele
   include HTTParty
   include Roadmap
 
+  base_uri "https://www.bloc.io/api/v1/"
+
   def initialize(email, password)
-    reply = self.class.post(api_url("sessions"), body: { email: email, password: password } )
+    reply = self.class.post(api_url("sessions"), body: { email: email, password: password })
     @auth_token = reply['auth_token']
   end
 
   def get_me
     reply = self.class.get(api_url("users/me"), headers: { "authorization" => @auth_token })
-    @user_info = JSON.parse(reply.body)
-    @user_info.keys.each do |key|
-      self.class.send(:define_method, key.to_sym) do
-         @user_info[key]
-      end
-    end
-    binding.pry
-    @user_info
+    body = JSON.parse(reply.body)
   end
 
   def get_mentor_availability(mentor_id)
     reply = self.class.get(api_url("mentors/#{mentor_id}/student_availability"), headers: {"austhorization" => @auth_token})
-    @mentor = JSON.parse(reply.body)
+    body = JSON.parse(reply.body)
+  end
+
+  def get_messages(arg = nil)
+    reply = self.class.get(api_url("message_threads"), headers: { "authorization" => @auth_token })
+    body = JSON.parse(reply.body)
+    pages = (1..(reply["count"]/10 + 1)).map do |n|
+      self.class.get(api_url("message_threads"), body: { page: n }, headers: { "authorization" => @auth_token })
+    end
+  end
+
+  def create_message(sender, recipient_id, token, subject, stripped)
+    options = {body: {sender: sender, recipient_id: recipient_id, token: nil, subject: subject, stripped: stripped}, headers: { "austhorization" => @auth_token }}
+    self.class.post(api_url("messages"), options)
   end
 
   private
