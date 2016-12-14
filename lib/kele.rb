@@ -16,12 +16,13 @@ class Kele
 
   def get_me
     reply = self.class.get(api_url("users/me"), headers: { "authorization" => @auth_token })
-    body = JSON.parse(reply.body)
+    @user_data = JSON.parse(reply.body)
   end
 
-  def get_mentor_availability(mentor_id)
-    reply = self.class.get(api_url("mentors/#{mentor_id}/student_availability"), headers: {"austhorization" => @auth_token})
-    body = JSON.parse(reply.body)
+
+  def get_mentor_availability()
+    mentor_id = @user_data["current_enrollment"]["mentor_id"]
+    @mentor_availability_data = JSON.parse(self.class.get("/mentors/#{mentor_id}/student_availability", body: { id: mentor_id },headers: { "authorization" => @auth_token }).body)
   end
 
   def get_messages(arg = nil)
@@ -33,13 +34,18 @@ class Kele
   end
 
   def create_message(sender, recipient_id, token, subject, stripped)
-    options = {body: {sender: sender, recipient_id: recipient_id, token: nil, subject: subject, stripped: stripped}, headers: { "austhorization" => @auth_token }}
+    options = {body: {sender: sender, recipient_id: recipient_id, token: nil, subject: subject, stripped: stripped}, headers: { "authorization" => @auth_token }}
     self.class.post(api_url("messages"), options)
   end
 
   def create_submission(assignment_branch, assignment_commit_link, checkpoint_id, comment, enrollment_id)
     options = {body: {assignment_branch: assignment_branch, assignment_commit_link: assignment_commit_link, checkpoint_id: checkpoint_id, comment: comment, enrollment_id: enrollment_id}, headers: { "authorization" => @auth_token }}
     self.class.post(api_url("checkpoint_submissions"), options)
+  end
+
+  def submission_update(id, assignment_branch, assignment_commit_link, checkpoint_id, comment, enrollment_id)
+    options = {body: {id: id, assignment_branch: assignment_branch, assignment_commit_link: assignment_commit_link, checkpoint_id: checkpoint_id, comment: comment, enrollment_id: enrollment_id}, headers: { "authorization" => @auth_token }}
+    self.class.post(api_url("checkpoint_submissions/#{id}"), options)
   end
 
   private
